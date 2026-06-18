@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ninja Number Climb</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;800&family=Quicksand:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --deep:#1c2b1f;
+    --mid:#33502f;
+    --accent:#5ba35e;
+    --accent-2:#2f6b3a;
+    --flame:#c1402e;
+    --parchment:#f4ead0;
+    --ink:#251c12;
+    --glow:#e3a83f;
+    --new-tier:#5a6b58;
+    --learn-tier:#4a7d8c;
+    --practice-tier:#5fae6a;
+    --fluent-tier:#e3a83f;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Quicksand',sans-serif;
+    color:var(--parchment);
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(227,168,63,0.10), transparent 45%),
+      radial-gradient(circle at 85% 100%, rgba(193,64,46,0.08), transparent 40%),
+      linear-gradient(180deg, var(--deep) 0%, var(--mid) 55%, #24391f 100%);
+    display:flex;
+    justify-content:center;
+    overflow-x:hidden;
+  }
+  .app{ width:100%; max-width:480px; min-height:100vh; position:relative; padding:18px 18px 28px; display:flex; flex-direction:column; }
+  .bubbles{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;}
+  .bubble{ position:absolute;bottom:-40px;border-radius:50%; background:radial-gradient(circle at 30% 30%, rgba(255,255,255,0.22), rgba(255,255,255,0.02)); animation:rise linear infinite; }
+  @keyframes rise{ 0%{transform:translateY(0) translateX(0);opacity:0;} 10%{opacity:0.5;} 100%{transform:translateY(-110vh) translateX(20px);opacity:0;} }
+  @media (prefers-reduced-motion: reduce){ .bubble, .companion, .character{animation:none !important;} }
+
+  header.top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1;}
+  .wordmark{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:21px;letter-spacing:0.3px;color:var(--parchment);}
+  .wordmark span{color:var(--glow);}
+  .icon-btn{ background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.18); color:var(--parchment);width:38px;height:38px;border-radius:12px; display:flex;align-items:center;justify-content:center;cursor:pointer; font-size:17px;transition:background .15s ease; }
+  .icon-btn:hover{background:rgba(255,255,255,0.16);}
+  .icon-row{display:flex;gap:8px;}
+
+  main{flex:1;display:flex;flex-direction:column;position:relative;z-index:1;}
+  .screen{display:none;flex-direction:column;flex:1;}
+  .screen.active{display:flex;}
+
+  /* HOME */
+  .hero{margin-top:14px;text-align:center;}
+  .hero h1{font-family:'Baloo 2',sans-serif;font-size:25px;margin:0 0 6px;font-weight:700;}
+  .hero p{margin:0;color:rgba(244,234,208,0.75);font-size:14px;line-height:1.5;}
+  .fluency-wrap{display:flex;flex-direction:column;align-items:center;margin-top:18px;}
+  .fluency-ring{ width:108px;height:108px;border-radius:50%; display:flex;align-items:center;justify-content:center; background:conic-gradient(var(--fluent-tier) 0%, rgba(255,255,255,0.14) 0); }
+  .fluency-ring-inner{ width:84px;height:84px;border-radius:50%;background:var(--deep); display:flex;flex-direction:column;align-items:center;justify-content:center; border:1px solid rgba(255,255,255,0.12); }
+  .fluency-ring-inner .pct{font-family:'Space Mono',monospace;font-size:23px;font-weight:700;color:var(--fluent-tier);}
+  .fluency-ring-inner .lbl{font-size:8.5px;color:rgba(244,234,208,0.65);text-transform:uppercase;letter-spacing:0.4px;margin-top:2px;text-align:center;line-height:1.2;}
+  .fam-overall{text-align:center;font-size:13px;color:rgba(244,234,208,0.8);margin-top:8px;font-family:'Quicksand';font-weight:600;}
+  .fam-overall b{color:var(--fluent-tier);font-family:'Space Mono',monospace;}
+  .pearl-stat{margin:18px 0 6px;display:flex;justify-content:center;gap:14px;}
+  .stat-card{ background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.14); border-radius:16px;padding:11px 18px;text-align:center;min-width:112px; }
+  .stat-card .num{font-family:'Space Mono',monospace;font-size:21px;font-weight:700;color:var(--fluent-tier);}
+  .stat-card .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:0.6px;color:rgba(244,234,208,0.65);margin-top:2px;}
+
+  .scene-picker{display:flex;gap:10px;margin-top:20px;}
+  .scene-card{ flex:1;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.14); border-radius:18px;padding:14px 10px;text-align:center;cursor:pointer;transition:border-color .15s, background .15s; }
+  .scene-card .emoji{font-size:30px;display:block;margin-bottom:6px;}
+  .scene-card .name{font-family:'Baloo 2';font-weight:700;font-size:14.5px;}
+  .scene-card .desc{font-size:11px;color:rgba(244,234,208,0.65);margin-top:3px;line-height:1.3;}
+  .scene-card.selected{border-color:var(--accent);background:rgba(91,163,94,0.16);}
+
+  .cta-dive{ margin:22px auto 8px; background:linear-gradient(135deg,var(--accent),var(--accent-2)); border:none;color:#fff;font-family:'Baloo 2',sans-serif;font-weight:700; font-size:19px;padding:17px 36px;border-radius:50px;cursor:pointer; box-shadow:0 10px 24px rgba(91,163,94,0.35); transition:transform .12s ease; }
+  .cta-dive:hover{transform:translateY(-2px);}
+  .home-links{display:flex;justify-content:center;gap:10px;margin-top:auto;padding-top:16px;}
+  .home-links button{ background:transparent;border:1px solid rgba(255,255,255,0.22);color:var(--parchment); padding:10px 16px;border-radius:12px;font-family:'Quicksand';font-weight:600; font-size:13.5px;cursor:pointer; }
+
+  /* DRILL */
+  .drill-top{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .progress-bar-track{flex:1;height:10px;border-radius:6px;background:rgba(255,255,255,0.12);position:relative;margin-right:20px;overflow:visible;}
+  .progress-bar-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--fluent-tier));transition:width .4s ease;overflow:hidden;}
+  .progress-checkpoint{position:absolute;top:50%;width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,0.3);border:2px solid rgba(20,16,10,0.45);transform:translate(-50%,-50%);transition:background .3s;}
+  .progress-checkpoint.lit{background:var(--fluent-tier);}
+  .progress-flag{position:absolute;right:-20px;top:50%;transform:translateY(-50%);font-size:15px;}
+  .streak{font-family:'Space Mono',monospace;font-size:13px;color:var(--flame);white-space:nowrap;}
+
+  .scene-stage{ position:relative;height:210px;border-radius:22px;overflow:hidden;border:1px solid rgba(255,255,255,0.14); }
+  .scene-stage.climb{ background:linear-gradient(to top,#22301d 0%, #3a5230 38%, #7c9a5e 72%, #d9e8c4 100%); }
+  .scene-stage.dash{ background:linear-gradient(to right,#22301d, #4d6a3a 55%, #b79a5e 100%); }
+  .scene-deco{position:absolute;font-size:20px;opacity:0.55;pointer-events:none;}
+  .character{ position:absolute;font-size:32px;transition:left 0.6s cubic-bezier(.34,1.4,.64,1), bottom 0.6s cubic-bezier(.34,1.4,.64,1); filter:drop-shadow(0 4px 6px rgba(0,0,0,0.4)); }
+  .character.bump{animation:bump .35s ease;}
+  @keyframes bump{ 0%{transform:scale(1);} 40%{transform:scale(1.25) rotate(-6deg);} 100%{transform:scale(1);} }
+  .character.wobble{animation:wobble .4s ease;}
+  @keyframes wobble{ 0%,100%{transform:translateX(0);} 30%{transform:translateX(-5px) rotate(-4deg);} 60%{transform:translateX(5px) rotate(4deg);} }
+  .companion{position:absolute;font-size:22px;opacity:0.85;animation:bob 2.6s ease-in-out infinite;}
+  @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-7px);} }
+  .goal-marker{position:absolute;font-size:26px;}
+  .fact-bubble{ position:absolute;top:10px;left:50%;transform:translateX(-50%); background:rgba(37,28,18,0.82);border:1px solid rgba(255,255,255,0.22); border-radius:14px;padding:9px 18px;font-family:'Baloo 2';font-size:21px;font-weight:700; color:var(--parchment);white-space:nowrap; }
+  .pace-track{position:absolute;top:54px;left:50%;transform:translateX(-50%);width:130px;height:7px;background:rgba(255,255,255,0.2);border-radius:4px;overflow:hidden;}
+  .pace-fill{height:100%;width:100%;background:var(--accent);border-radius:4px;transition:background .2s;}
+  .pace-fill.low{background:var(--flame);}
+  .stat-box-row{position:absolute;left:10px;bottom:10px;display:flex;gap:6px;}
+  .stat-box{ background:rgba(20,16,10,0.72);border:1px solid rgba(255,255,255,0.18);border-radius:8px; padding:5px 9px;font-family:'Space Mono',monospace;font-size:11px;line-height:1.3; }
+  .stat-box .k{color:rgba(244,234,208,0.65);font-size:9px;text-transform:uppercase;letter-spacing:0.4px;}
+  .stat-box .v{color:var(--fluent-tier);font-weight:700;font-size:13px;}
+  .float-particle{ position:absolute;font-family:'Space Mono',monospace;font-weight:700;color:var(--fluent-tier); font-size:15px;animation:floatUp 0.9s ease-out forwards;pointer-events:none; }
+  @keyframes floatUp{ 0%{opacity:1;transform:translateY(0);} 100%{opacity:0;transform:translateY(-38px);} }
+
+  .answer-slot{ margin:14px auto 0;min-height:48px;min-width:100px;display:flex;align-items:center; justify-content:center;gap:4px;background:rgba(255,255,255,0.07);border:2px solid rgba(255,255,255,0.2); border-radius:14px;padding:8px 18px; }
+  .answer-slot .digit{font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--fluent-tier);}
+  .answer-slot .cursor{width:2px;height:24px;background:rgba(244,234,208,0.55);animation:blink 1s step-end infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  .keypad{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-top:14px;}
+  .key{ background:linear-gradient(180deg,#9a6a3f,#7a4f2c);border:2px solid #5c3a1e; color:var(--parchment);font-family:'Space Mono',monospace;font-size:20px;font-weight:700; padding:14px 0;border-radius:10px;cursor:pointer;transition:filter .12s; box-shadow:0 4px 0 rgba(0,0,0,0.25); }
+  .key:hover{filter:brightness(1.12);}
+  .key.go{background:linear-gradient(180deg,#6fbf6f,#3f8f4a);border-color:#2c6b35;color:#fff;font-family:'Baloo 2';font-size:15px;}
+  .key.back{color:var(--flame);font-size:16px;}
+
+  .feedback{margin-top:10px;min-height:20px;font-weight:700;font-size:14px;text-align:center;}
+  .feedback.correct{color:var(--accent);}
+  .feedback.wrong{color:var(--flame);}
+  .exit-link{font-size:12.5px;color:rgba(244,234,208,0.55);cursor:pointer;text-decoration:underline;text-align:center;margin-top:14px;}
+
+  /* SUMMARY */
+  .summary-card{margin-top:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.16);border-radius:20px;padding:22px;}
+  .summary-card h2{font-family:'Baloo 2';margin:0 0 14px;font-size:21px;text-align:center;}
+  .sum-row{display:flex;justify-content:space-between;font-size:14px;padding:7px 0;border-bottom:1px dashed rgba(255,255,255,0.12);}
+  .sum-row:last-child{border-bottom:none;}
+  .sum-row b{font-family:'Space Mono',monospace;color:var(--fluent-tier);}
+  .mastered-list{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px;}
+  .mastered-chip{background:rgba(227,168,63,0.18);border:1px solid rgba(227,168,63,0.4);color:var(--fluent-tier); font-family:'Space Mono',monospace;font-size:12px;padding:5px 10px;border-radius:10px;}
+  .pearl-banner{ margin-top:16px;text-align:center;background:rgba(91,163,94,0.14);border:1px solid rgba(91,163,94,0.35); border-radius:14px;padding:14px;font-size:13.5px;line-height:1.5; }
+  .pearl-banner b{font-family:'Space Mono',monospace;color:var(--glow);font-size:16px;}
+  .summary-actions{display:flex;gap:10px;margin-top:18px;}
+  .btn-primary{flex:1;background:linear-gradient(135deg,var(--accent),var(--accent-2));border:none;color:#fff; font-family:'Baloo 2';font-weight:700;padding:13px;border-radius:14px;cursor:pointer;}
+  .btn-secondary{flex:1;background:transparent;border:1px solid rgba(255,255,255,0.25);color:var(--parchment); font-family:'Quicksand';font-weight:600;padding:13px;border-radius:14px;cursor:pointer;}
+  .transfer-btn{width:100%;margin-top:10px;background:rgba(227,168,63,0.16);border:1px solid rgba(227,168,63,0.5); color:var(--fluent-tier);font-family:'Quicksand';font-weight:700;padding:11px;border-radius:12px;cursor:pointer;font-size:13.5px;}
+  .transfer-btn:disabled{opacity:0.4;cursor:default;}
+
+  /* FACT FAMILIES */
+  .fam-tabs{display:flex;gap:8px;margin-top:14px;}
+  .fam-tab{flex:1;text-align:center;padding:10px;border-radius:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.14); font-family:'Baloo 2';font-size:13.5px;cursor:pointer;}
+  .fam-tab.active{background:rgba(91,163,94,0.22);border-color:var(--accent);}
+  .fam-legend{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px;font-size:11px;color:rgba(244,234,208,0.75);}
+  .fam-legend .lg-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:middle;}
+  .fam-panel{display:none;margin-top:10px;}
+  .fam-panel.active{display:block;}
+  .pyramid-scroll{max-height:420px;overflow-y:auto;padding:6px 0 14px;}
+  .pyr-row{display:flex;justify-content:center;gap:5px;margin-bottom:6px;}
+  .pyr-col{display:flex;flex-direction:column;align-items:center;gap:2px;}
+  .pyr-sum-label{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;color:rgba(244,234,208,0.8);}
+  .pyr-cell{ width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center; font-family:'Space Mono',monospace;font-size:9px;line-height:1.05;text-align:center;flex-direction:column; border:1px solid rgba(255,255,255,0.18); }
+  .grid-scroll{max-height:400px;overflow:auto;padding-bottom:14px;}
+  .mult-grid{display:grid;gap:3px;}
+  .grid-cell{ aspect-ratio:1; border-radius:5px;display:flex;align-items:center;justify-content:center; font-family:'Space Mono',monospace;font-size:10px;border:1px solid rgba(255,255,255,0.12); }
+  .grid-head{background:transparent !important;border:none !important;color:rgba(244,234,208,0.55);font-weight:700;}
+
+  /* SETTINGS */
+  .set-group{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.13);border-radius:16px;padding:14px 16px;margin-bottom:12px;}
+  .set-group h4{font-family:'Baloo 2';font-size:14px;margin:0 0 10px;color:var(--glow);}
+  .toggle-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:14px;}
+  .switch{position:relative;width:42px;height:24px;flex-shrink:0;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:rgba(255,255,255,0.18);border-radius:24px;cursor:pointer;transition:.2s;}
+  .slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+  input:checked + .slider{background:var(--accent);}
+  input:checked + .slider:before{transform:translateX(18px);}
+  select{ background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:var(--parchment); padding:7px 10px;border-radius:10px;font-family:'Quicksand';font-weight:600;font-size:13px; }
+  .save-btn{width:100%;margin-top:4px;background:linear-gradient(135deg,var(--accent),var(--accent-2)); border:none;color:#fff;font-family:'Baloo 2';font-weight:700;padding:13px;border-radius:14px;cursor:pointer;}
+
+  .back-row{display:flex;align-items:center;gap:10px;margin-bottom:4px;}
+  .back-row .title{font-family:'Baloo 2';font-size:19px;font-weight:700;}
+  .loading-msg{text-align:center;margin-top:60px;color:rgba(244,234,208,0.6);font-size:14px;}
+</style>
+</head>
+<body>
+<div class="bubbles" id="bubbles"></div>
+<div class="app">
+
+  <header class="top">
+    <div class="wordmark">Ninja <span>Number</span> Climb</div>
+    <div class="icon-row">
+      <div class="icon-btn" id="btn-family-icon" title="Fact families">📜</div>
+      <div class="icon-btn" id="btn-settings-icon" title="Settings">⚙️</div>
+    </div>
+  </header>
+
+  <main>
+    <div class="loading-msg" id="loading">Tip-toeing into position…</div>
+
+    <!-- HOME -->
+    <section class="screen" id="screen-home">
+      <div class="hero">
+        <h1>Ready to train?</h1>
+        <p>Pick a mission, type the answer fast, and your ninja moves ahead. Collect coins along the way.</p>
+      </div>
+      <div class="fluency-wrap">
+        <div class="fluency-ring" id="fluency-ring">
+          <div class="fluency-ring-inner">
+            <div class="pct" id="fluency-pct">0%</div>
+            <div class="lbl">Facts<br>fluent</div>
+          </div>
+        </div>
+      </div>
+      <div class="pearl-stat">
+        <div class="stat-card"><div class="num" id="home-pending">0</div><div class="lbl">Coins to add</div></div>
+        <div class="stat-card"><div class="num" id="home-alltime">0</div><div class="lbl">All-time coins</div></div>
+      </div>
+      <div class="scene-picker">
+        <div class="scene-card" id="card-climb" data-scene="climb">
+          <span class="emoji">🏔️</span>
+          <div class="name">Mountain Climb</div>
+          <div class="desc">Type the answer fast to climb toward the peak</div>
+        </div>
+        <div class="scene-card" id="card-dash" data-scene="dash">
+          <span class="emoji">⛩️</span>
+          <div class="name">Village Dash</div>
+          <div class="desc">Type fast to dash to the torii gate</div>
+        </div>
+      </div>
+      <button class="cta-dive" id="btn-start">Train! 🥷</button>
+      <div class="home-links">
+        <button id="btn-family-link">📜 Fact Families</button>
+        <button id="btn-settings-link">⚙️ Settings</button>
+      </div>
+    </section>
+
+    <!-- DRILL -->
+    <section class="screen" id="screen-drill">
+      <div class="drill-top">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
+          <div class="progress-checkpoint" data-pct="25" style="left:25%;"></div>
+          <div class="progress-checkpoint" data-pct="50" style="left:50%;"></div>
+          <div class="progress-checkpoint" data-pct="75" style="left:75%;"></div>
+          <div class="progress-flag">🏁</div>
+        </div>
+        <div class="streak" id="streak-counter">🔥 0</div>
+      </div>
+      <div class="scene-stage climb" id="scene-stage">
+        <div class="scene-deco" id="deco-1" style="top:14px;left:14px;">🌲</div>
+        <div class="scene-deco" id="deco-2" style="top:30px;right:48px;">🌲</div>
+        <div class="goal-marker" id="goal-marker" style="top:8px;right:12px;">🏆</div>
+        <div class="companion" id="companion" style="display:none;">🦅</div>
+        <div class="character" id="character">🥷</div>
+        <div class="fact-bubble" id="fact-bubble">7 + 5</div>
+        <div class="pace-track" id="pace-track"><div class="pace-fill" id="pace-fill"></div></div>
+        <div class="stat-box-row">
+          <div class="stat-box"><div class="k">Score</div><div class="v" id="stat-score">0</div></div>
+          <div class="stat-box"><div class="k" id="stat-label-2">Altitude</div><div class="v" id="stat-value-2">0 ft</div></div>
+        </div>
+      </div>
+      <div class="answer-slot" id="answer-slot"><span class="cursor"></span></div>
+      <div class="keypad" id="keypad"></div>
+      <div class="feedback" id="feedback"></div>
+      <div class="exit-link" id="btn-exit-drill">end early</div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="screen" id="screen-summary">
+      <div class="summary-card">
+        <h2 id="summary-title">Nice training! 🥷</h2>
+        <div class="sum-row"><span>Questions answered</span><b id="sum-questions">0</b></div>
+        <div class="sum-row"><span>Accuracy</span><b id="sum-accuracy">0%</b></div>
+        <div class="sum-row"><span>Average time</span><b id="sum-time">0.0s</b></div>
+        <div class="sum-row"><span>Facts newly mastered</span><b id="sum-mastered-count">0</b></div>
+        <div class="mastered-list" id="mastered-list"></div>
+        <div class="pearl-banner">Coins earned this round: <b id="sum-tokens">0</b> 🪙<br>
+          <span id="pending-line" style="font-size:12px;opacity:0.8;"></span>
+        </div>
+        <button class="transfer-btn" id="btn-transfer">Mark coins added to her tokens</button>
+      </div>
+      <div class="summary-actions">
+        <button class="btn-secondary" id="btn-home-from-summary">Done</button>
+        <button class="btn-primary" id="btn-play-again">Train Again</button>
+      </div>
+    </section>
+
+    <!-- FACT FAMILIES -->
+    <section class="screen" id="screen-family">
+      <div class="back-row"><div class="icon-btn" id="btn-family-back">←</div><div class="title">Fact Families</div></div>
+      <div class="fam-overall" id="fam-overall">Overall: <b>0%</b> fluent across all enabled operations</div>
+      <div class="fam-tabs">
+        <div class="fam-tab active" id="tab-addsub" data-tab="addsub">Add &amp; Subtract Pyramid</div>
+        <div class="fam-tab" id="tab-muldiv" data-tab="muldiv">Multiply &amp; Divide Grid</div>
+      </div>
+      <div class="fam-legend">
+        <span><span class="lg-dot" style="background:var(--new-tier);"></span>new</span>
+        <span><span class="lg-dot" style="background:var(--learn-tier);"></span>learning</span>
+        <span><span class="lg-dot" style="background:var(--practice-tier);"></span>practicing</span>
+        <span><span class="lg-dot" style="background:var(--fluent-tier);"></span>fluent</span>
+      </div>
+      <div class="fam-panel active" id="panel-addsub">
+        <div class="pyramid-scroll" id="pyramid-container"></div>
+      </div>
+      <div class="fam-panel" id="panel-muldiv">
+        <div class="grid-scroll"><div class="mult-grid" id="mult-grid-container"></div></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="screen" id="screen-settings">
+      <div class="back-row"><div class="icon-btn" id="btn-settings-back">←</div><div class="title">Settings</div></div>
+
+      <div class="set-group" style="margin-top:14px;">
+        <h4>Operations</h4>
+        <div class="toggle-row"><span>Addition</span>
+          <label class="switch"><input type="checkbox" id="op-add"><span class="slider"></span></label></div>
+        <div class="toggle-row"><span>Subtraction</span>
+          <label class="switch"><input type="checkbox" id="op-sub"><span class="slider"></span></label></div>
+        <div class="toggle-row"><span>Multiplication</span>
+          <label class="switch"><input type="checkbox" id="op-mul"><span class="slider"></span></label></div>
+        <div class="toggle-row"><span>Division</span>
+          <label class="switch"><input type="checkbox" id="op-div"><span class="slider"></span></label></div>
+      </div>
+
+      <div class="set-group">
+        <h4>Fact ranges</h4>
+        <div class="toggle-row"><span>Addition / subtraction up to</span>
+          <select id="range-add"><option value="5">5</option><option value="8">8</option><option value="10">10</option><option value="12">12</option></select></div>
+        <div class="toggle-row"><span>Multiplication / division up to</span>
+          <select id="range-mul"><option value="5">5</option><option value="8">8</option><option value="10">10</option><option value="12">12</option></select></div>
+      </div>
+
+      <div class="set-group">
+        <h4>Round length & pace</h4>
+        <div class="toggle-row"><span>Questions per round</span>
+          <select id="session-length"><option value="8">8</option><option value="12">12</option><option value="16">16</option><option value="20">20</option></select></div>
+        <div class="toggle-row"><span>Timer</span>
+          <select id="timer-mode"><option value="fast">Fast (real countdown)</option><option value="off">Relaxed (no time limit)</option></select></div>
+      </div>
+
+      <button class="save-btn" id="btn-save-settings">Save settings</button>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const STORAGE_KEY = "ninja-number-climb-progress-v2";
+  const ACTIVE_SIZE = 8;
+  const TARGET_MS = { add:3000, sub:3500, mul:4000, div:4500 };
+  const FAIL_MS = { add:4500, sub:5000, mul:6000, div:6500 };
+  const TIER_WEIGHT = { new:0, learning:1, practicing:2, fluent:3 };
+  const TIER_COLOR = { new:"var(--new-tier)", learning:"var(--learn-tier)", practicing:"var(--practice-tier)", fluent:"var(--fluent-tier)" };
+
+  let progress = null;
+  let factIndex = {};
+  let session = null;
+  let currentFactKey = null;
+  let currentInput = "";
+  let qStartTime = 0;
+  let answering = false;
+  let paceInterval = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function defaultProgress(){
+    return {
+      version: 1,
+      settings: { ops:{add:true,sub:true,mul:true,div:true}, addRange:10, mulRange:12, sessionLength:12, timerMode:"fast", scene:"climb" },
+      facts: {},
+      active: { add:[], sub:[], mul:[], div:[] },
+      queue: { add:[], sub:[], mul:[], div:[] },
+      fluent: { add:[], sub:[], mul:[], div:[] },
+      tokens: { pending:0, allTimeEarned:0, allTimeTransferred:0 },
+      lastFactKey: null
+    };
+  }
+
+  // ---------- fact generation ----------
+  function buildFacts(settings){
+    const N = settings.addRange, M = settings.mulRange;
+    const db = { add:[], sub:[], mul:[], div:[] };
+
+    for(let a=0;a<=N;a++) for(let b=a;b<=N;b++)
+      db.add.push({key:`add-${a}-${b}`, op:"add", a, b, answer:a+b, text:`${a} + ${b}`, diff:a+b});
+
+    for(let a=0;a<=N;a++){
+      for(let b=a;b<=N;b++){
+        const sum=a+b;
+        if(a===b){
+          db.sub.push({key:`sub-${sum}-${a}`, op:"sub", a:sum, b:a, answer:a, text:`${sum} − ${a}`, diff:sum});
+        } else {
+          db.sub.push({key:`sub-${sum}-${a}`, op:"sub", a:sum, b:a, answer:b, text:`${sum} − ${a}`, diff:sum});
+          db.sub.push({key:`sub-${sum}-${b}`, op:"sub", a:sum, b:b, answer:a, text:`${sum} − ${b}`, diff:sum});
+        }
+      }
+    }
+    for(let a=0;a<=M;a++) for(let b=a;b<=M;b++)
+      db.mul.push({key:`mul-${a}-${b}`, op:"mul", a, b, answer:a*b, text:`${a} × ${b}`, diff:a*b});
+
+    for(let a=1;a<=M;a++){
+      for(let b=a;b<=M;b++){
+        const product=a*b;
+        if(a===b){
+          db.div.push({key:`div-${product}-${a}`, op:"div", a:product, b:a, answer:a, text:`${product} ÷ ${a}`, diff:product});
+        } else {
+          db.div.push({key:`div-${product}-${a}`, op:"div", a:product, b:a, answer:b, text:`${product} ÷ ${a}`, diff:product});
+          db.div.push({key:`div-${product}-${b}`, op:"div", a:product, b:b, answer:a, text:`${product} ÷ ${b}`, diff:product});
+        }
+      }
+    }
+    Object.values(db).forEach(arr=>arr.sort((x,y)=>x.diff-y.diff));
+    return db;
+  }
+
+  function rebuildStructure(){
+    const db = buildFacts(progress.settings);
+    factIndex = {};
+    ["add","sub","mul","div"].forEach(op=>{
+      db[op].forEach(f=>{ factIndex[f.key]=f; });
+      const allKeys = db[op].map(f=>f.key);
+      allKeys.forEach(k=>{ if(!progress.facts[k]) progress.facts[k] = {seen:0, acc:0, timeEma:null, tier:"new"}; });
+
+      const fluentKeys = allKeys.filter(k=>progress.facts[k].tier==="fluent");
+      const others = allKeys.filter(k=>progress.facts[k].tier!=="fluent");
+      let prevActive = (progress.active[op]||[]).filter(k=>others.includes(k));
+      let pool = others.filter(k=>!prevActive.includes(k));
+      while(prevActive.length<ACTIVE_SIZE && pool.length){ prevActive.push(pool.shift()); }
+
+      progress.active[op] = prevActive;
+      progress.queue[op] = pool;
+      progress.fluent[op] = fluentKeys;
+    });
+  }
+
+  // ---------- persistence ----------
+  const hasClaudeStorage = (typeof window.storage !== "undefined") && window.storage && typeof window.storage.get === "function";
+
+  async function storageGet(key){
+    if(hasClaudeStorage){
+      try{ return await window.storage.get(key, false); }
+      catch(e){ return null; }
+    }
+    try{
+      const v = localStorage.getItem(key);
+      return v ? { key, value:v, shared:false } : null;
+    }catch(e){ return null; }
+  }
+  async function storageSet(key, value){
+    if(hasClaudeStorage){
+      try{ return await window.storage.set(key, value, false); }
+      catch(e){ return null; }
+    }
+    try{ localStorage.setItem(key, value); return { key, value, shared:false }; }
+    catch(e){ return null; }
+  }
+
+  async function loadProgress(){
+    try{
+      const res = await storageGet(STORAGE_KEY);
+      progress = res && res.value ? JSON.parse(res.value) : defaultProgress();
+    }catch(e){ progress = defaultProgress(); }
+    if(!progress.settings) progress.settings = defaultProgress().settings;
+    if(!progress.settings.scene) progress.settings.scene = "climb";
+    rebuildStructure();
+  }
+  async function saveProgress(){
+    try{ await storageSet(STORAGE_KEY, JSON.stringify(progress)); }
+    catch(e){ console.error("save failed", e); }
+  }
+
+  function showScreen(id){
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    $(id).classList.add("active");
+  }
+  function computeOverallFluency(){
+    const ops = enabledOps();
+    let fluentCount = 0, total = 0;
+    ops.forEach(op=>{
+      fluentCount += progress.fluent[op].length;
+      total += progress.active[op].length + progress.queue[op].length + progress.fluent[op].length;
+    });
+    return total ? Math.round((fluentCount/total)*100) : 0;
+  }
+
+  function renderHome(){
+    $("home-pending").textContent = progress.tokens.pending;
+    $("home-alltime").textContent = progress.tokens.allTimeEarned;
+    document.querySelectorAll(".scene-card").forEach(c=>{
+      c.classList.toggle("selected", c.dataset.scene === progress.settings.scene);
+    });
+    const pct = computeOverallFluency();
+    $("fluency-pct").textContent = pct + "%";
+    $("fluency-ring").style.background = `conic-gradient(var(--fluent-tier) ${pct}%, rgba(255,255,255,0.14) 0)`;
+  }
+
+  // ---------- adaptive engine ----------
+  function weightedPick(keys, weights){
+    const total = weights.reduce((a,b)=>a+b,0);
+    let r = Math.random()*total;
+    for(let i=0;i<keys.length;i++){ r -= weights[i]; if(r<=0) return keys[i]; }
+    return keys[keys.length-1];
+  }
+  function enabledOps(){ return ["add","sub","mul","div"].filter(o=>progress.settings.ops[o]); }
+
+  function pickNextFact(){
+    const ops = enabledOps();
+    if(!ops.length) return null;
+    let activePool = []; ops.forEach(op=>activePool.push(...progress.active[op]));
+    let reviewPool = []; ops.forEach(op=>reviewPool.push(...progress.fluent[op]));
+    let candidates = activePool;
+    if(reviewPool.length && Math.random()<0.15) candidates = reviewPool;
+    if(!candidates.length) candidates = activePool.length?activePool:reviewPool;
+    if(!candidates.length) return null;
+    let filtered = candidates.filter(k=>k!==progress.lastFactKey);
+    if(!filtered.length) filtered = candidates;
+    const weights = filtered.map(k=>{
+      const s = progress.facts[k];
+      const target = TARGET_MS[factIndex[k].op];
+      let w = 1;
+      if(s.seen<3) w += 2;
+      w += (1-s.acc)*3;
+      if(s.timeEma!=null) w += Math.max(0,(s.timeEma-target)/target)*2;
+      return Math.max(0.15,w);
+    });
+    return weightedPick(filtered, weights);
+  }
+
+  function recordAnswer(key, correct, elapsedMs){
+    const s = progress.facts[key];
+    s.seen++;
+    s.acc = s.seen===1 ? (correct?1:0) : (s.acc*0.75 + (correct?1:0)*0.25);
+    s.timeEma = s.timeEma==null ? elapsedMs : (s.timeEma*0.7 + elapsedMs*0.3);
+    const op = factIndex[key].op;
+    const target = TARGET_MS[op];
+    let masteredNow = false;
+    if(s.tier!=="fluent" && s.seen>=4 && s.acc>=0.85 && s.timeEma<=target){
+      s.tier = "fluent"; masteredNow = true;
+      progress.active[op] = progress.active[op].filter(k=>k!==key);
+      progress.fluent[op].push(key);
+      if(progress.queue[op].length){ progress.active[op].push(progress.queue[op].shift()); }
+    } else if(s.tier==="new"){ s.tier = "learning"; }
+    else if(s.tier==="learning" && s.acc>=0.6){ s.tier = "practicing"; }
+    progress.lastFactKey = key;
+    return masteredNow;
+  }
+
+  // ---------- drill flow ----------
+  function startSession(){
+    session = { total: progress.settings.sessionLength, index:0, correct:0, sumTime:0, masteredKeys:[], tokens:0, streak:0 };
+    answering = false;
+    setupScene();
+    renderProgressBar();
+    showScreen("screen-drill");
+    nextQuestion();
+  }
+
+  function setupScene(){
+    const stage = $("scene-stage");
+    stage.classList.remove("climb","dash");
+    stage.classList.add(progress.settings.scene);
+    $("companion").style.display = progress.settings.scene === "dash" ? "block" : "none";
+    if(progress.settings.scene === "dash"){
+      $("goal-marker").textContent = "⛩️";
+      $("goal-marker").style.top = "auto"; $("goal-marker").style.right = "8px"; $("goal-marker").style.bottom="40px";
+      $("character").textContent = "🥷";
+      $("stat-label-2").textContent = "Distance";
+      $("deco-1").textContent = "🏯"; $("deco-1").style.top="20px"; $("deco-1").style.left="10px";
+      $("deco-2").textContent = "🌲"; $("deco-2").style.top="auto"; $("deco-2").style.bottom="14px"; $("deco-2").style.right="70px";
+    } else {
+      $("goal-marker").textContent = "🏆";
+      $("goal-marker").style.bottom = "auto"; $("goal-marker").style.top = "8px"; $("goal-marker").style.right="12px";
+      $("character").textContent = "🥷";
+      $("stat-label-2").textContent = "Altitude";
+      $("deco-1").textContent = "🌲"; $("deco-1").style.top="14px"; $("deco-1").style.left="14px";
+      $("deco-2").textContent = "🌲"; $("deco-2").style.top="30px"; $("deco-2").style.bottom="auto"; $("deco-2").style.right="48px";
+    }
+    $("stat-score").textContent = "0";
+    $("stat-value-2").textContent = progress.settings.scene === "dash" ? "0 m" : "0 ft";
+    positionCharacter(0, false);
+  }
+
+  function positionCharacter(fraction, animate){
+    const character = $("character");
+    const companion = $("companion");
+    if(progress.settings.scene === "dash"){
+      const left = 6 + fraction*78;
+      character.style.left = left + "%";
+      character.style.bottom = "14px";
+      companion.style.left = (left+9) + "%";
+      companion.style.bottom = "60px";
+    } else {
+      character.style.left = "10%";
+      character.style.bottom = (10 + fraction*72) + "%";
+    }
+    if(animate){
+      character.classList.remove("bump"); void character.offsetWidth; character.classList.add("bump");
+    }
+  }
+
+  function renderProgressBar(){
+    const pct = Math.round((session.index/session.total)*100);
+    $("progress-fill").style.width = pct + "%";
+    document.querySelectorAll(".progress-checkpoint").forEach(cp=>{
+      cp.classList.toggle("lit", pct >= parseFloat(cp.dataset.pct));
+    });
+  }
+
+  function updateStatBoxes(){
+    $("stat-score").textContent = session.tokens;
+    const unit = progress.settings.scene === "dash" ? (session.correct*20)+" m" : (session.correct*15)+" ft";
+    $("stat-value-2").textContent = unit;
+  }
+
+  function nextQuestion(){
+    if(session.index >= session.total){ endSession(); return; }
+    currentFactKey = pickNextFact();
+    if(!currentFactKey){ endSession(); return; }
+    answering = true;
+    currentInput = "";
+    $("feedback").textContent = "";
+    $("feedback").className = "feedback";
+    const fact = factIndex[currentFactKey];
+    $("fact-bubble").textContent = fact.text + " = ?";
+    renderAnswerSlot();
+    renderProgressBar();
+    qStartTime = Date.now();
+    startCountdown(fact.op);
+  }
+
+  function renderAnswerSlot(){
+    const slot = $("answer-slot");
+    slot.innerHTML = "";
+    for(const ch of currentInput){
+      const sp = document.createElement("span");
+      sp.className = "digit";
+      sp.textContent = ch;
+      slot.appendChild(sp);
+    }
+    const cursor = document.createElement("span");
+    cursor.className = "cursor";
+    slot.appendChild(cursor);
+  }
+
+  function handleKey(val){
+    if(!answering) return;
+    if(val === "back"){ currentInput = currentInput.slice(0,-1); }
+    else if(val === "go"){ submitAnswer(); return; }
+    else { if(currentInput.length < 3) currentInput += val; }
+    renderAnswerSlot();
+  }
+
+  function buildKeypad(){
+    const wrap = $("keypad");
+    wrap.innerHTML = "";
+    const layout = ["1","2","3","4","5","6","7","8","9","back","0","go"];
+    layout.forEach(v=>{
+      const b = document.createElement("div");
+      b.className = "key" + (v==="back"?" back":"") + (v==="go"?" go":"");
+      b.textContent = v==="back" ? "⌫" : (v==="go" ? "Go!" : v);
+      b.addEventListener("click", ()=>handleKey(v));
+      wrap.appendChild(b);
+    });
+  }
+
+  function startCountdown(op){
+    clearInterval(paceInterval);
+    const fill = $("pace-fill");
+    const track = $("pace-track");
+    fill.classList.remove("low");
+    if(progress.settings.timerMode === "off"){ track.style.display = "none"; return; }
+    track.style.display = "block";
+    const duration = FAIL_MS[op];
+    fill.style.width = "100%";
+    const start = Date.now();
+    paceInterval = setInterval(()=>{
+      const remain = Math.max(0, duration - (Date.now()-start));
+      const pct = (remain/duration)*100;
+      fill.style.width = pct + "%";
+      if(pct <= 25) fill.classList.add("low");
+      if(remain <= 0){
+        clearInterval(paceInterval);
+        if(answering) handleTimeout();
+      }
+    }, 60);
+  }
+
+  function spawnParticle(text){
+    const stage = $("scene-stage");
+    const p = document.createElement("div");
+    p.className = "float-particle";
+    p.textContent = text;
+    const charLeft = $("character").style.left || "10%";
+    const charBottom = $("character").style.bottom || "10%";
+    p.style.left = charLeft;
+    p.style.bottom = charBottom;
+    stage.appendChild(p);
+    setTimeout(()=>p.remove(), 900);
+  }
+
+  function submitAnswer(){
+    if(!answering || currentInput === "") return;
+    answering = false;
+    clearInterval(paceInterval);
+    const elapsed = Date.now()-qStartTime;
+    const fact = factIndex[currentFactKey];
+    const given = parseInt(currentInput,10);
+    const correct = given === fact.answer;
+    finalizeAnswer(correct, elapsed, false);
+  }
+
+  function handleTimeout(){
+    if(!answering) return;
+    answering = false;
+    const fact = factIndex[currentFactKey];
+    finalizeAnswer(false, FAIL_MS[fact.op], true);
+  }
+
+  function finalizeAnswer(correct, elapsed, isTimeout){
+    const fact = factIndex[currentFactKey];
+    const masteredNow = recordAnswer(currentFactKey, correct, elapsed);
+
+    let tokensThisQ = 0;
+    if(correct){
+      tokensThisQ += 1;
+      if(elapsed <= TARGET_MS[fact.op]) tokensThisQ += 1;
+      session.correct++;
+      session.streak++;
+    } else {
+      session.streak = 0;
+    }
+    if(masteredNow){ tokensThisQ += 3; session.masteredKeys.push(fact.text); }
+    progress.tokens.pending += tokensThisQ;
+    progress.tokens.allTimeEarned += tokensThisQ;
+    session.tokens += tokensThisQ;
+    session.sumTime += elapsed;
+
+    $("streak-counter").textContent = "🔥 " + session.streak;
+    updateStatBoxes();
+
+    const fb = $("feedback");
+    const character = $("character");
+    if(correct){
+      fb.textContent = masteredNow ? "Mastered! +" + tokensThisQ + " coins 🌟" : "Got it! +" + tokensThisQ + " coin" + (tokensThisQ>1?"s":"");
+      fb.className = "feedback correct";
+      spawnParticle("+"+tokensThisQ);
+      positionCharacter(session.correct/session.total, true);
+    } else {
+      fb.textContent = isTimeout ? ("Time's up — it's " + fact.answer) : ("It's " + fact.answer + " — nice try!");
+      fb.className = "feedback wrong";
+      character.classList.remove("wobble"); void character.offsetWidth; character.classList.add("wobble");
+    }
+
+    session.index++;
+    saveProgress();
+    setTimeout(()=>{ nextQuestion(); }, correct ? 650 : 1150);
+  }
+
+  function endSession(){
+    clearInterval(paceInterval);
+    const q = session.index;
+    const acc = q ? Math.round((session.correct/q)*100) : 0;
+    const avg = q ? (session.sumTime/q/1000).toFixed(1) : "0.0";
+
+    $("sum-questions").textContent = q;
+    $("sum-accuracy").textContent = acc + "%";
+    $("sum-time").textContent = avg + "s";
+    $("sum-mastered-count").textContent = session.masteredKeys.length;
+    $("sum-tokens").textContent = session.tokens;
+
+    const list = $("mastered-list");
+    list.innerHTML = "";
+    session.masteredKeys.forEach(t=>{
+      const chip = document.createElement("div");
+      chip.className = "mastered-chip";
+      chip.textContent = t;
+      list.appendChild(chip);
+    });
+
+    $("pending-line").textContent = "Total coins ready to add to her real tokens: " + progress.tokens.pending;
+    $("btn-transfer").disabled = progress.tokens.pending === 0;
+
+    showScreen("screen-summary");
+    saveProgress();
+  }
+
+  // ---------- fact family views ----------
+  function combinedAddTier(a,b){
+    const sum = a+b;
+    const keys = [];
+    if(progress.settings.ops.add) keys.push(`add-${a}-${b}`);
+    if(progress.settings.ops.sub){
+      if(a===b) keys.push(`sub-${sum}-${a}`);
+      else keys.push(`sub-${sum}-${a}`, `sub-${sum}-${b}`);
+    }
+    if(!keys.length) return null;
+    let minW = 3;
+    keys.forEach(k=>{ if(progress.facts[k]) minW = Math.min(minW, TIER_WEIGHT[progress.facts[k].tier]); });
+    return Object.keys(TIER_WEIGHT).find(t=>TIER_WEIGHT[t]===minW);
+  }
+
+  function combinedMulTier(a,b){
+    const product = a*b;
+    const keys = [];
+    if(progress.settings.ops.mul) keys.push(`mul-${a}-${b}`);
+    if(progress.settings.ops.div && a>=1 && b>=1){
+      if(a===b) keys.push(`div-${product}-${a}`);
+      else keys.push(`div-${product}-${a}`, `div-${product}-${b}`);
+    }
+    if(!keys.length) return null;
+    let minW = 3;
+    keys.forEach(k=>{ if(progress.facts[k]) minW = Math.min(minW, TIER_WEIGHT[progress.facts[k].tier]); });
+    return Object.keys(TIER_WEIGHT).find(t=>TIER_WEIGHT[t]===minW);
+  }
+
+  function renderPyramid(){
+    const N = progress.settings.addRange;
+    const container = $("pyramid-container");
+    container.innerHTML = "";
+    if(!progress.settings.ops.add && !progress.settings.ops.sub){
+      container.innerHTML = '<p style="text-align:center;font-size:13px;opacity:0.7;">Turn on Addition or Subtraction in Settings to see this pyramid.</p>';
+      return;
+    }
+    for(let a=N; a>=0; a--){
+      const row = document.createElement("div");
+      row.className = "pyr-row";
+      for(let b=a; b<=N; b++){
+        const sum = a+b;
+        const tier = combinedAddTier(a,b);
+        const col = document.createElement("div");
+        col.className = "pyr-col";
+        const sumLabel = document.createElement("div");
+        sumLabel.className = "pyr-sum-label";
+        sumLabel.textContent = sum;
+        const cell = document.createElement("div");
+        cell.className = "pyr-cell";
+        cell.style.background = TIER_COLOR[tier] || TIER_COLOR.new;
+        cell.style.color = tier==="fluent" ? "#251c12" : "rgba(244,234,208,0.9)";
+        cell.innerHTML = `<div>${a}</div><div>${b}</div>`;
+        col.appendChild(sumLabel);
+        col.appendChild(cell);
+        row.appendChild(col);
+      }
+      container.appendChild(row);
+    }
+  }
+
+  function renderMultGrid(){
+    const M = progress.settings.mulRange;
+    const grid = $("mult-grid-container");
+    grid.innerHTML = "";
+    if(!progress.settings.ops.mul && !progress.settings.ops.div){
+      grid.innerHTML = '<p style="text-align:center;font-size:13px;opacity:0.7;">Turn on Multiplication or Division in Settings to see this grid.</p>';
+      return;
+    }
+    grid.style.gridTemplateColumns = `repeat(${M+2}, minmax(20px,1fr))`;
+    const corner = document.createElement("div");
+    corner.className = "grid-cell grid-head";
+    grid.appendChild(corner);
+    for(let c=0;c<=M;c++){
+      const head = document.createElement("div");
+      head.className = "grid-cell grid-head";
+      head.textContent = c;
+      grid.appendChild(head);
+    }
+    for(let r=0;r<=M;r++){
+      const rowHead = document.createElement("div");
+      rowHead.className = "grid-cell grid-head";
+      rowHead.textContent = r;
+      grid.appendChild(rowHead);
+      for(let c=0;c<=M;c++){
+        const a = Math.min(r,c), b = Math.max(r,c);
+        const tier = combinedMulTier(a,b);
+        const cell = document.createElement("div");
+        cell.className = "grid-cell";
+        cell.style.background = TIER_COLOR[tier] || TIER_COLOR.new;
+        cell.style.color = tier==="fluent" ? "#251c12" : "rgba(244,234,208,0.85)";
+        grid.appendChild(cell);
+      }
+    }
+  }
+
+  function renderFamilyScreen(){
+    const pct = computeOverallFluency();
+    $("fam-overall").innerHTML = "Overall: <b>" + pct + "%</b> fluent across all enabled operations";
+    renderPyramid();
+    renderMultGrid();
+  }
+
+  // ---------- settings ----------
+  function renderSettings(){
+    $("op-add").checked = progress.settings.ops.add;
+    $("op-sub").checked = progress.settings.ops.sub;
+    $("op-mul").checked = progress.settings.ops.mul;
+    $("op-div").checked = progress.settings.ops.div;
+    $("range-add").value = String(progress.settings.addRange);
+    $("range-mul").value = String(progress.settings.mulRange);
+    $("session-length").value = String(progress.settings.sessionLength);
+    $("timer-mode").value = progress.settings.timerMode;
+  }
+  function saveSettings(){
+    progress.settings.ops.add = $("op-add").checked;
+    progress.settings.ops.sub = $("op-sub").checked;
+    progress.settings.ops.mul = $("op-mul").checked;
+    progress.settings.ops.div = $("op-div").checked;
+    progress.settings.addRange = parseInt($("range-add").value,10);
+    progress.settings.mulRange = parseInt($("range-mul").value,10);
+    progress.settings.sessionLength = parseInt($("session-length").value,10);
+    progress.settings.timerMode = $("timer-mode").value;
+    rebuildStructure();
+    saveProgress();
+    showScreen("screen-home");
+    renderHome();
+  }
+
+  // ---------- ambient drift ----------
+  function spawnBubbles(){
+    const reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(reduce) return;
+    const wrap = $("bubbles");
+    for(let i=0;i<12;i++){
+      const b = document.createElement("div");
+      b.className = "bubble";
+      const size = 6 + Math.random()*14;
+      b.style.width = size+"px"; b.style.height = size+"px";
+      b.style.left = (Math.random()*100)+"%";
+      b.style.animationDuration = (12+Math.random()*16)+"s";
+      b.style.animationDelay = (Math.random()*14)+"s";
+      wrap.appendChild(b);
+    }
+  }
+
+  // ---------- wiring ----------
+  function wireEvents(){
+    document.querySelectorAll(".scene-card").forEach(card=>{
+      card.addEventListener("click", ()=>{
+        progress.settings.scene = card.dataset.scene;
+        renderHome();
+        saveProgress();
+      });
+    });
+
+    $("btn-start").addEventListener("click", startSession);
+    $("btn-exit-drill").addEventListener("click", ()=>{ clearInterval(paceInterval); endSession(); });
+    $("btn-play-again").addEventListener("click", startSession);
+    $("btn-home-from-summary").addEventListener("click", ()=>{ showScreen("screen-home"); renderHome(); });
+
+    $("btn-transfer").addEventListener("click", ()=>{
+      progress.tokens.allTimeTransferred += progress.tokens.pending;
+      progress.tokens.pending = 0;
+      saveProgress();
+      $("pending-line").textContent = "Added! Total coins ready to add to her real tokens: 0";
+      $("btn-transfer").disabled = true;
+    });
+
+    $("btn-family-icon").addEventListener("click", ()=>{ renderFamilyScreen(); showScreen("screen-family"); });
+    $("btn-family-link").addEventListener("click", ()=>{ renderFamilyScreen(); showScreen("screen-family"); });
+    $("btn-family-back").addEventListener("click", ()=>{ showScreen("screen-home"); renderHome(); });
+
+    document.querySelectorAll(".fam-tab").forEach(tab=>{
+      tab.addEventListener("click", ()=>{
+        document.querySelectorAll(".fam-tab").forEach(t=>t.classList.remove("active"));
+        document.querySelectorAll(".fam-panel").forEach(p=>p.classList.remove("active"));
+        tab.classList.add("active");
+        $("panel-" + tab.dataset.tab).classList.add("active");
+      });
+    });
+
+    $("btn-settings-icon").addEventListener("click", ()=>{ renderSettings(); showScreen("screen-settings"); });
+    $("btn-settings-link").addEventListener("click", ()=>{ renderSettings(); showScreen("screen-settings"); });
+    $("btn-settings-back").addEventListener("click", ()=>{ showScreen("screen-home"); renderHome(); });
+    $("btn-save-settings").addEventListener("click", saveSettings);
+
+    document.addEventListener("keydown", (e)=>{
+      if(!document.getElementById("screen-drill").classList.contains("active")) return;
+      if(e.key>="0" && e.key<="9") handleKey(e.key);
+      else if(e.key==="Backspace"){ e.preventDefault(); handleKey("back"); }
+      else if(e.key==="Enter") handleKey("go");
+    });
+  }
+
+  async function init(){
+    buildKeypad();
+    wireEvents();
+    spawnBubbles();
+    await loadProgress();
+    $("loading").style.display = "none";
+    renderHome();
+    showScreen("screen-home");
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
